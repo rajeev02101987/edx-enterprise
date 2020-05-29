@@ -18,7 +18,7 @@ from integrated_channels.xapi.statements.learner_course_enrollment import Learne
 LOGGER = logging.getLogger(__name__)
 
 
-def send_course_enrollment_statement(lrs_configuration, course_enrollment):
+def send_course_enrollment_statement(lrs_configuration, course_enrollment, object_type=None):
     """
     Send xAPI statement for course enrollment.
 
@@ -34,11 +34,12 @@ def send_course_enrollment_statement(lrs_configuration, course_enrollment):
         )
     )
 
-    user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
+    user_social_auth = None
     statement = LearnerCourseEnrollmentStatement(
         user,
         user_social_auth,
         course_enrollment.course,
+        object_type
     )
     EnterpriseXAPIClient(lrs_configuration).save_statement(statement)
 

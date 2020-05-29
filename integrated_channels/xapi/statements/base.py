@@ -27,15 +27,19 @@ class EnterpriseStatement(Statement):
             mbox=u'mailto:{email}'.format(email=user.email),
         )
 
-    def get_object(self, course_overview):
+    def get_object(self, course_overview, object_type):
         """
         Get object for the statement.
         """
         name = (course_overview.display_name or '').encode("ascii", "ignore").decode('ascii')
         description = (course_overview.short_description or '').encode("ascii", "ignore").decode('ascii')
+        course_id = course_overview.id
+
+        if object_type is not None and object_type == 'course':
+            course_id = course_overview.key
 
         return Activity(
-            id=course_overview.id,
+            id=course_id,
             definition=ActivityDefinition(
                 type=X_API_ACTIVITY_COURSE,
                 name=LanguageMap({'en-US': name}),

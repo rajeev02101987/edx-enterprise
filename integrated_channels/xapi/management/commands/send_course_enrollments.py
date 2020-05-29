@@ -12,6 +12,7 @@ import six
 
 from django.core.management.base import BaseCommand, CommandError
 
+from enterprise.api_client.discovery import get_course_catalog_api_service_client
 from enterprise.models import EnterpriseCourseEnrollment, EnterpriseCustomer
 from enterprise.utils import NotConnectedToOpenEdX
 from integrated_channels.exceptions import ClientError
@@ -126,11 +127,23 @@ class Command(BaseCommand):
             lrs_configuration.enterprise_customer,
             days,
         )
-
+        course_catalog_client = get_course_catalog_api_service_client(
+            site=lrs_configuration.enterprise_customer.site
+        )
         for course_enrollment in course_enrollments:
             error_message = None
             course_id = six.text_type(course_enrollment.course.id)
             try:
+                course_enrollment.course.key = course_catalog_client.get_course_id(str(course_enrollment.course_id))
+            except ClientError:
+                error_message = 'Client error while retrieving course information from Discovery Service.  ' \
+                                'Course: {course_id}'.format(
+                                    course_id=course_id
+                                )
+                LOGGER.exception(error_message)
+                status = 500
+            try:
+                send_course_enrollment_statement(lrs_configuration, course_enrollment, "course")
                 send_course_enrollment_statement(lrs_configuration, course_enrollment)
             except ClientError:
                 error_message = 'Client error while sending course enrollment to xAPI for ' \
@@ -144,16 +157,29 @@ class Command(BaseCommand):
                 status = 500
             else:
                 LOGGER.info(
-                    'Successfully send the course enrollment to xAPI for user: {username} for course: '
-                    "{course_id}".format(
+                    'Successfully sent course and course run enrollment events to xAPI LRS for user: {username} ' \
+                    'for course: "{course_id}"'.format(
                         username=course_enrollment.user.username,
-                        course_id=course_id
+                        course_id=course_enrollment.course.key
                     )
                 )
                 status = 200
             xapi_transmission, created = XAPILearnerDataTransmissionAudit.objects.get_or_create(
                 user=course_enrollment.user,
                 course_id=course_id,
+                defaults={
+                    'enterprise_course_enrollment_id': EnterpriseCourseEnrollment.get_enterprise_course_enrollment_id(
+                        course_enrollment.user,
+                        course_id,
+                        lrs_configuration.enterprise_customer
+                    ),
+                    'status': status,
+                    'error_message': error_message
+                }
+            )
+            xapi_transmission, created = XAPILearnerDataTransmissionAudit.objects.get_or_create(
+                user=course_enrollment.user,
+                course_id=course_enrollment.course.key,
                 defaults={
                     'enterprise_course_enrollment_id': EnterpriseCourseEnrollment.get_enterprise_course_enrollment_id(
                         course_enrollment.user,
