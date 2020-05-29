@@ -34,7 +34,7 @@ def send_course_enrollment_statement(lrs_configuration, course_enrollment, objec
         )
     )
 
-    user_social_auth = None
+    user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
     statement = LearnerCourseEnrollmentStatement(
         user,
         user_social_auth,
