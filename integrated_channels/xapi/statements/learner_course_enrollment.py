@@ -29,7 +29,7 @@ class LearnerCourseEnrollmentStatement(EnterpriseStatement):
         kwargs.update(
             actor=self.get_actor(user, user_social_auth),
             verb=self.get_verb(),
-            object=self.get_object(course_overview, object_type=object_type)
+            object=self.get_object(course_overview, object_type)
         )
         super(LearnerCourseEnrollmentStatement, self).__init__(*args, **kwargs)
 
