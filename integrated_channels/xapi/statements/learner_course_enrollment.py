@@ -16,7 +16,7 @@ class LearnerCourseEnrollmentStatement(EnterpriseStatement):
     xAPI statement to serialize data related to course registration.
     """
 
-    def __init__(self, user, user_social_auth, course_overview, object_type=None, *args, **kwargs):
+    def __init__(self, user, user_social_auth, course_overview, object_type, *args, **kwargs):
         """
         Initialize and populate statement with learner info and course info.
 

@@ -103,7 +103,8 @@ def send_course_enrollment_statement(lrs_configuration, user, course_overview, o
     return response_fields
 
 
-def send_course_completion_statement(lrs_configuration, user, course_overview, course_grade, object_type):
+def send_course_completion_statement(lrs_configuration,
+                                     user, course_overview, course_grade, object_type, response_fields):
     """
     Send xAPI statement for course completion.
 

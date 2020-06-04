@@ -13,6 +13,7 @@ import six
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 
+from enterprise.api_client.discovery import get_course_catalog_api_service_client
 from enterprise.models import EnterpriseCustomer
 from enterprise.utils import NotConnectedToOpenEdX
 from integrated_channels.exceptions import ClientError
@@ -174,7 +175,7 @@ class Command(BaseCommand):
                 user,
                 course_overview,
                 course_grade,
-                object_type='courserun',
+                'courserun',
                 response_fields,
             )
 
@@ -190,7 +191,7 @@ class Command(BaseCommand):
                     lrs_configuration,
                     user,
                     course_overview,
-                    course_grade
+                    course_grade,
                     object_type='course'
                 )
 

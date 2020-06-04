@@ -7,8 +7,6 @@ from __future__ import absolute_import, unicode_literals
 
 from tincan import Activity, ActivityDefinition, Agent, LanguageMap, Statement
 
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-
 from integrated_channels.xapi.constants import X_API_ACTIVITY_COURSE
 
 
@@ -59,6 +57,7 @@ class EnterpriseStatement(Statement):
         if object_type is not None and object_type == 'course':
             course_id = course_overview.key
 
+        from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
         activity_id = 'https://{activity_domain}/xapi/activities/{course_id}'.format(
             activity_domain=configuration_helpers.get_value('SITE_NAME'),
             course_id=course_id
