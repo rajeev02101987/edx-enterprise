@@ -153,7 +153,14 @@ class Command(BaseCommand):
 
         for xapi_transmission in xapi_transmission_queryset:
 
-            course_grade = enrollment_grades[xapi_transmission.enterprise_course_enrollment_id]
+            object_type = 'course'
+            if 'course-v1' in xapi_transmission.course_id:
+                object_type = 'courserun'
+
+            try:
+                course_grade = enrollment_grades[xapi_transmission.enterprise_course_enrollment_id]
+            except:
+                continue
             user = users.get(course_grade.user_id)
             courserun_id = six.text_type(course_grade.course_id)
             course_overview = course_overviews.get(course_grade.course_id)
@@ -165,7 +172,7 @@ class Command(BaseCommand):
                 user,
                 course_overview,
                 course_grade,
-                'course',
+                object_type,
                 response_fields
             )
 
@@ -179,128 +186,6 @@ class Command(BaseCommand):
                     response_fields.get('status'),
                     response_fields.get('error_message')
                 )
-
-                response_fields = {'status': 500, 'error_message': None}
-                response_fields = send_course_completion_statement(
-                    lrs_configuration,
-                    user,
-                    course_overview,
-                    course_grade,
-                    'courserun',
-                    response_fields
-                )
-
-                if response_fields.get('status') == 200:
-
-                    self.save_xapi_learner_data_transmission_audit_record(
-                        xapi_transmission,
-                        course_grade.percent_grade,
-                        1,
-                        course_grade.passed_timestamp,
-                        response_fields.get('status'),
-                        response_fields.get('error_message')
-                    )
-
-        import pdb; pdb.set_trace();
-
-
-
-
-
-        # course_catalog_client = get_course_catalog_api_service_client(
-        #     site=lrs_configuration.enterprise_customer.site
-        # )
-
-
-
-
-
-
-
-
-        # for persistent_course_grade in persistent_course_grades:
-
-        #     user = users.get(persistent_course_grade.user_id)
-        #     course_overview = course_overviews.get(persistent_course_grade.course_id)
-        #     course_grade = CourseGradeFactory().read(user, course_key=persistent_course_grade.course_id)
-        #     courserun_id = six.text_type(course_overview.id)
-        #
-
-        #     enterprise_course_enrollment_id = EnterpriseCourseEnrollment.get_enterprise_course_enrollment_id(
-        #         user,
-        #         courserun_id,
-        #         lrs_configuration.enterprise_customer
-        #     )
-
-        #     import pdb; pdb.set_trace()
-        #     enterprise_course_enrollments = EnterpriseCourseEnrollment.objects.filter(enterprise_customer_user_id__enterprise_customer=lrs_configuration.enterprise_customer)
-        #     enterprise_enrollment_ids = enterprise_course_enrollments.values_list('user_id', flat=True)
-        #     xapi_transmission_queryset = XAPILearnerDataTransmissionAudit.objects.filter(
-        #         course_completed=0,
-        #         enterprise_course_enrollment_id__in=enterprise_enrollment_ids
-        #     )
-        #     if not xapi_transmission_queryset.exists():
-        #         LOGGER.warning(
-        #             'XAPILearnerDataTransmissionAudit object does not exist for enterprise customer: '
-        #             '{enterprise_customer}, user: {username}, course: {course_id}.  Skipping transmission '
-        #             'of course completion statement to the configured LRS endpoint.  This is likely because '
-        #             'a corresponding course enrollment statement has not yet been transmitted.'.format(
-        #                 enterprise_customer=lrs_configuration.enterprise_customer.name,
-        #                 username=user.username if user else 'User Unavailable',
-        #                 course_id=six.text_type(course_overview.id)
-        #             )
-        #         )
-        #         continue
-
-        #     response_fields = {'status': 500, 'error_message': None}
-        #     response_fields = send_course_completion_statement(
-        #         lrs_configuration,
-        #         user,
-        #         course_overview,
-        #         course_grade,
-        #         'course',
-        #         response_fields
-        #     )
-
-        #     course_completed = 0
-        #     if response_fields.get('status') == 200:
-        #         course_completed = 1
-
-        #     self.save_xapi_learner_data_transmission_audit_record(
-        #         user,
-        #         course_overview.key,
-        #         enterprise_course_enrollment_id,
-        #         course_grade.percent,
-        #         course_completed,
-        #         persistent_course_grade.modified,
-        #         response_fields.get('status'),
-        #         response_fields.get('error_message')
-
-        #     )
-
-        #     response_fields = {'status': 500, 'error_message': None}
-        #     response_fields = send_course_completion_statement(
-        #         lrs_configuration,
-        #         user,
-        #         course_overview,
-        #         "courserun",
-        #         response_fields
-        #     )
-
-        #     course_completed = 0
-        #     if response_fields.get('status') == 200:
-        #         course_completed = 1
-
-        #         self.save_xapi_learner_data_transmission_audit_record(
-        #             user,
-        #             courserun_id,
-        #             enterprise_course_enrollment_id,
-        #             course_grade.percent,
-        #             course_completed,
-        #             persistent_course_grade.modified,
-        #             response_fields.get('status'),
-        #             response_fields.get('error_message')
-        #         )
 
     def get_course_completions(self, enterprise_course_enrollments):
         """
@@ -369,7 +254,7 @@ class Command(BaseCommand):
                                                          status, error_message):
         xapi_transmission.course_completed = course_completed
         xapi_transmission.completed_timestamp = completed_timestamp
-        xapi_transmission.course_grade = course_grade
+        xapi_transmission.grade = course_grade
         xapi_transmission.status = status
         xapi_transmission.error_message = error_message
         xapi_transmission.save()

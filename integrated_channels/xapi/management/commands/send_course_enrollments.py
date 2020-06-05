@@ -185,24 +185,39 @@ class Command(BaseCommand):
         Returns:
             (list): A list of CourseEnrollment objects.
         """
+        enterprise_enrollment_ids = EnterpriseCourseEnrollment.objects.filter(
+            enterprise_customer_user__enterprise_customer=enterprise_customer
+        )
+        xapi_transmissions = XAPILearnerDataTransmissionAudit.objects.filter(
+            enterprise_course_enrollment_id__in=enterprise_enrollment_ids
+        )
+
+        transmitted_enrollment_ids = xapi_transmissions.values_list('enterprise_course_enrollment_id', flat=True)
+
+        import pdb; pdb.set_trace();
+
         course_enrollments = CourseEnrollment.objects.filter(
             created__gt=datetime.datetime.now() - datetime.timedelta(days=days)
-        ).filter(
-            user_id__in=enterprise_customer.enterprise_customer_users.values_list('user_id', flat=True)
-        )
+        ).filter(user_id__in=enterprise_customer.enterprise_customer_users.values_list('user_id', flat=True))
+
+        pertinent_enrollments = []
+        for enrollment in course_enrollments:
+            already_transmitted = xapi_transmissions.filter(user_id=enrollment.user_id, course_id=enrollment.course_id)
+            if not already_transmitted:
+                pertinent_enrollments.append(enrollment)
 
         LOGGER.info(
             '[Integrated Channel][xAPI] Found %s course enrollments for enterprise customer: [%s] during last %s days',
-            len(course_enrollments),
+            len(pertinent_enrollments),
             enterprise_customer,
             days,
         )
 
-        return course_enrollments
+        return pertinent_enrollments
 
     def save_xapi_learner_data_transmission_audit_record(self, user, course_id, enterprise_course_enrollment_id,
                                                          status, error_message):
-        import pdb; pdb.set_trace();
+
         xapi_transmission, created = XAPILearnerDataTransmissionAudit.objects.get_or_create(
             user=user,
             course_id=course_id,
