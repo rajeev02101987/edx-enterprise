@@ -28,7 +28,6 @@ class EnterpriseStatement(Statement):
         actor_name = sso_id if sso_id else user.email
         return actor_name
 
-
     def get_actor(self, user, user_social_auth):
         """
         Returns the actor component of the Enterprise xAPI statement.
@@ -53,20 +52,26 @@ class EnterpriseStatement(Statement):
 
         description = (course_overview.short_description or '').encode("ascii", "ignore").decode('ascii')
 
-        course_id = course_overview.id
+        activity_id = course_overview.id
         if object_type is not None and object_type == 'course':
-            course_id = course_overview.key
+            activity_id = course_overview.key
 
-        activity_id = 'https://{domain}/xapi/activities/{course_id}'.format(
+        xapi_activity_id = 'https://{domain}/xapi/activities/{object_type}/{activity_id}'.format(
             domain=domain,
-            course_id=course_id
+            object_type=object_type,
+            activity_id=activity_id
         )
 
+        xapi_object_extensions = {
+            'https://{domain}/course/key'.format(domain=domain): course_overview.key
+        }
+
         return Activity(
-            id=activity_id,
+            id=xapi_activity_id,
             definition=ActivityDefinition(
                 type=X_API_ACTIVITY_COURSE,
                 name=LanguageMap({'en-US': name}),
                 description=LanguageMap({'en-US': description}),
+                extensions=xapi_object_extensions,
             ),
         )
