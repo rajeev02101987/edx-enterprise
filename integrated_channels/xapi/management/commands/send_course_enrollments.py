@@ -194,8 +194,6 @@ class Command(BaseCommand):
 
         transmitted_enrollment_ids = xapi_transmissions.values_list('enterprise_course_enrollment_id', flat=True)
 
-        import pdb; pdb.set_trace();
-
         course_enrollments = CourseEnrollment.objects.filter(
             created__gt=datetime.datetime.now() - datetime.timedelta(days=days)
         ).filter(user_id__in=enterprise_customer.enterprise_customer_users.values_list('user_id', flat=True))
