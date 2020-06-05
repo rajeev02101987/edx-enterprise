@@ -83,6 +83,7 @@ def send_course_enrollment_statement(lrs_configuration, user, course_overview, o
     #user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
 
     statement = LearnerCourseEnrollmentStatement(
+        lrs_configuration.enterprise_customer.site,
         user,
         user_social_auth,
         course_overview,
@@ -121,6 +122,7 @@ def send_course_completion_statement(lrs_configuration,
     #user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
 
     statement = LearnerCourseCompletionStatement(
+        lrs_configuration.enterprise_customer.site,
         user,
         user_social_auth,
         course_overview,

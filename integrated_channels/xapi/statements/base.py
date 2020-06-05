@@ -42,7 +42,7 @@ class EnterpriseStatement(Statement):
             mbox=u'mailto:{email}'.format(email=user.email),
         )
 
-    def get_object(self, course_overview, object_type):
+    def get_object(self, domain, course_overview, object_type):
         """
         Returns the object (activity) component of the Enterprise xAPI statement.
         Arguments:
@@ -57,9 +57,8 @@ class EnterpriseStatement(Statement):
         if object_type is not None and object_type == 'course':
             course_id = course_overview.key
 
-        from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-        activity_id = 'https://{activity_domain}/xapi/activities/{course_id}'.format(
-            activity_domain=configuration_helpers.get_value('SITE_NAME'),
+        activity_id = 'https://{domain}/xapi/activities/{course_id}'.format(
+            domain=domain,
             course_id=course_id
         )
 

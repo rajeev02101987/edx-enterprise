@@ -150,7 +150,8 @@ class Command(BaseCommand):
                     course_enrollment.user,
                     course_overview.key,
                     enterprise_course_enrollment_id,
-                    response_fields.get('status')
+                    response_fields.get('status'),
+                    response_fields.get('error_message')
                 )
 
                 response_fields = {'status': 500, 'error_message': None}
@@ -163,13 +164,14 @@ class Command(BaseCommand):
                 )
 
                 if response_fields.get('status') == 200:
-
                     self.save_xapi_learner_data_transmission_audit_record(
                         course_enrollment.user,
                         courserun_id,
                         enterprise_course_enrollment_id,
-                        response_fields.get('status')
+                        response_fields.get('status'),
+                        response_fields.get('error_message')
                     )
+
 
     def get_course_enrollments(self, enterprise_customer, days):
         """
@@ -199,7 +201,8 @@ class Command(BaseCommand):
         return course_enrollments
 
     def save_xapi_learner_data_transmission_audit_record(self, user, course_id, enterprise_course_enrollment_id,
-                                                         status, error_message=None):
+                                                         status, error_message):
+        import pdb; pdb.set_trace();
         xapi_transmission, created = XAPILearnerDataTransmissionAudit.objects.get_or_create(
             user=user,
             course_id=course_id,
