@@ -168,10 +168,12 @@ class TestSendCourseEnrollments(unittest.TestCase):
         mock.MagicMock(return_value=[mock.MagicMock()])
     )
     @mock.patch(MODULE_PATH + 'send_course_enrollment_statement')
+    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_command_once_for_all_customers(self, mock_send_course_enrollment_statement):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
+        mock_catalog_integration.current.return_value = mock_integration_config
         factories.XAPILRSConfigurationFactory.create_batch(5)
         call_command('send_course_enrollments')
 
