@@ -27,7 +27,10 @@ class TestLearnerCourseEnrollmentStatement(unittest.TestCase):
         super(TestLearnerCourseEnrollmentStatement, self).setUp()
         faker = FakerFactory.create()
 
+        self.site = Mock(domain='xapi.testing.com')
         self.user = factories.UserFactory()
+        self.mock_social_auth = Mock(provider='tpa-saml', uid='default:edxsso')
+
         # pylint: disable=no-member
         self.course_overview = Mock(
             id='course-v1:edX+DemoX+Demo_Course',
@@ -71,8 +74,10 @@ class TestLearnerCourseEnrollmentStatement(unittest.TestCase):
         Validate statement when learner enrolls in a course.
         """
         statement = LearnerCourseEnrollmentStatement(
+            self.site,
             self.user,
-            None,
+            self.mock_social_auth,
             self.course_overview,
+            'course',
         )
         self.assertDictEqual(json.loads(statement.to_json()), self.expected)

@@ -27,6 +27,7 @@ class TestLearnerCourseCompletionStatement(unittest.TestCase):
         super(TestLearnerCourseCompletionStatement, self).setUp()
         faker = FakerFactory.create()
 
+        self.site = Mock(domain='xapi.testing.com')
         self.user = factories.UserFactory()
         self.mock_social_auth = Mock(provider='tpa-saml', uid='default:edxsso')
         # pylint: disable=no-member
@@ -78,9 +79,11 @@ class TestLearnerCourseCompletionStatement(unittest.TestCase):
         Validate statement when learner completes a course.
         """
         statement = LearnerCourseCompletionStatement(
+            self.site,
             self.user,
             self.mock_social_auth,
             self.course_overview,
             self.course_grade,
+            'course'
         )
         self.assertDictEqual(json.loads(statement.to_json()), self.expected)

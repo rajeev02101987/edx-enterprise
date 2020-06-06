@@ -10,7 +10,6 @@ import logging
 
 import six
 
-from enterprise.tpa_pipeline import get_user_social_auth
 from integrated_channels.exceptions import ClientError
 from integrated_channels.xapi.client import EnterpriseXAPIClient
 from integrated_channels.xapi.statements.learner_course_completion import LearnerCourseCompletionStatement
@@ -142,4 +141,3 @@ def send_course_completion_statement(lrs_configuration,
     )
 
     return response_fields
-

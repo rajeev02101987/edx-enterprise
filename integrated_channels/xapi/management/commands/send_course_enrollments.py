@@ -125,7 +125,6 @@ class Command(BaseCommand):
         )
         for course_enrollment in course_enrollments:
 
-            error_message = None
             course_overview = course_enrollment.course
             courserun_id = six.text_type(course_overview.id)
             course_overview.key = course_catalog_client.get_course_id(courserun_id)
@@ -146,7 +145,7 @@ class Command(BaseCommand):
 
             if response_fields.get('status') == 200:
 
-                self.save_xapi_learner_data_transmission_audit_record(
+                self.save_xapi_learner_data_transmission_audit(
                     course_enrollment.user,
                     course_overview.key,
                     enterprise_course_enrollment_id,
@@ -164,7 +163,7 @@ class Command(BaseCommand):
                 )
 
                 if response_fields.get('status') == 200:
-                    self.save_xapi_learner_data_transmission_audit_record(
+                    self.save_xapi_learner_data_transmission_audit(
                         course_enrollment.user,
                         courserun_id,
                         enterprise_course_enrollment_id,
@@ -192,8 +191,6 @@ class Command(BaseCommand):
             enterprise_course_enrollment_id__in=enterprise_enrollment_ids
         )
 
-        transmitted_enrollment_ids = xapi_transmissions.values_list('enterprise_course_enrollment_id', flat=True)
-
         course_enrollments = CourseEnrollment.objects.filter(
             created__gt=datetime.datetime.now() - datetime.timedelta(days=days)
         ).filter(user_id__in=enterprise_customer.enterprise_customer_users.values_list('user_id', flat=True))
@@ -213,8 +210,22 @@ class Command(BaseCommand):
 
         return pertinent_enrollments
 
-    def save_xapi_learner_data_transmission_audit_record(self, user, course_id, enterprise_course_enrollment_id,
-                                                         status, error_message):
+    def save_xapi_learner_data_transmission_audit(self, user, course_id, enterprise_course_enrollment_id,
+                                                  status, error_message):
+
+        """
+        Capture interesting information about the xAPI enrollment (registration) event transmission.
+
+        Arguments:
+            user (User): User object
+            course_id (String): Course or courserun key
+            enterprise_course_enrollment_id (Numeric): EnterpriseCourseEnrollment identifier
+            status (Numeric):  The response status code
+            error_message (String):  Information describing any error state provided by the caller
+
+        Returns:
+            None
+        """
 
         xapi_transmission, created = XAPILearnerDataTransmissionAudit.objects.get_or_create(
             user=user,

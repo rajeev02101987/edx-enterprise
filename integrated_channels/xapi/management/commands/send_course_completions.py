@@ -5,7 +5,6 @@ Send xAPI statements to the LRS configured via admin.
 
 from __future__ import absolute_import, unicode_literals
 
-import datetime
 from logging import getLogger
 
 import six
@@ -16,7 +15,6 @@ from django.core.management.base import BaseCommand, CommandError
 from enterprise.api_client.discovery import get_course_catalog_api_service_client
 from enterprise.models import EnterpriseCourseEnrollment, EnterpriseCustomer, EnterpriseCustomerUser
 from enterprise.utils import NotConnectedToOpenEdX
-from integrated_channels.exceptions import ClientError
 from integrated_channels.xapi.models import XAPILearnerDataTransmissionAudit, XAPILRSConfiguration
 from integrated_channels.xapi.utils import send_course_completion_statement
 
@@ -129,14 +127,17 @@ class Command(BaseCommand):
         Arguments:
             lrs_configuration (XAPILRSConfiguration): Configuration object containing LRS configurations
                 of the LRS where to send xAPI  learner analytics.
+
+            days (Numeric):  Deprecated.  Original implementation utilized a "days" parameter to limit
+                the number of enrollments transmitted, but this proved to be more problematic than helpful.
         """
         enterprise_course_enrollments = EnterpriseCourseEnrollment.objects.filter(
             enterprise_customer_user_id__enterprise_customer=lrs_configuration.enterprise_customer
         )
-        enterprise_course_enrollment_ids = enterprise_course_enrollments.values_list('id', flat=True)
+        enterprise_enrollment_ids = enterprise_course_enrollments.values_list('id', flat=True)
 
         xapi_transmission_queryset = XAPILearnerDataTransmissionAudit.objects.filter(
-            enterprise_course_enrollment_id__in=enterprise_course_enrollment_ids,
+            enterprise_course_enrollment_id__in=enterprise_enrollment_ids,
             course_completed=0,
         )
 
@@ -159,14 +160,16 @@ class Command(BaseCommand):
 
             try:
                 course_grade = enrollment_grades[xapi_transmission.enterprise_course_enrollment_id]
-            except:
+            except KeyError:
                 continue
+
             user = users.get(course_grade.user_id)
             courserun_id = six.text_type(course_grade.course_id)
             course_overview = course_overviews.get(course_grade.course_id)
             course_overview.key = course_catalog_client.get_course_id(courserun_id)
 
-            response_fields = {'status': 500, 'error_message': None}
+            default_error_message = 'Days argument has been deprecated.  Value: {days}'.format(days=days)
+            response_fields = {'status': 500, 'error_message': default_error_message}
             response_fields = send_course_completion_statement(
                 lrs_configuration,
                 user,
@@ -178,7 +181,7 @@ class Command(BaseCommand):
 
             if response_fields.get('status') == 200:
 
-                self.save_xapi_learner_data_transmission_audit_record(
+                self.save_xapi_learner_data_transmission_audit(
                     xapi_transmission,
                     course_grade.percent_grade,
                     1,
@@ -211,13 +214,13 @@ class Command(BaseCommand):
                 passed_timestamp__isnull=False
             )
 
-            if len(grade_records):
+            if grade_records.exists():
                 ece_grades.setdefault(ece.id, grade_records.first())
 
         return ece_grades
 
     @staticmethod
-    def prefetch_users(enterprise_course_enrollment_grades):
+    def prefetch_users(enrollment_grades):
         """
         Prefetch Users from the list of user_ids present in the persistent_course_grades.
 
@@ -228,14 +231,14 @@ class Command(BaseCommand):
             (dict): A dictionary containing user_id to user mapping.
         """
         users = User.objects.filter(
-            id__in=[ece_grade.user_id for ece_grade in enterprise_course_enrollment_grades.values()]
+            id__in=[grade.user_id for grade in enrollment_grades.values()]
         )
         return {
             user.id: user for user in users
         }
 
     @staticmethod
-    def prefetch_courses(enterprise_course_enrollment_grades):
+    def prefetch_courses(enrollment_grades):
         """
         Prefetch courses from the list of course_ids present in the persistent_course_grades.
 
@@ -246,12 +249,28 @@ class Command(BaseCommand):
             (dict): A dictionary containing course_id to course_overview mapping.
         """
         return CourseOverview.get_from_ids(
-            [ece_grade.course_id for ece_grade in enterprise_course_enrollment_grades.values()]
+            [grade.course_id for grade in enrollment_grades.values()]
         )
 
-    def save_xapi_learner_data_transmission_audit_record(self, xapi_transmission,
-                                                         course_grade, course_completed, completed_timestamp,
-                                                         status, error_message):
+    def save_xapi_learner_data_transmission_audit(self, xapi_transmission,
+                                                  course_grade, course_completed, completed_timestamp,
+                                                  status, error_message):
+        """
+        Capture interesting information about the xAPI enrollment (registration) event transmission.
+
+        Arguments:
+            xapi_transmission (XAPILearnerDataTransmissionAudit): Transmission audit object being updated
+            course_grade (Numeric): Grade value for the enrollment
+            course_completed: (Boolean/Numeric): Whether or not the enrollment is considered complete.
+            completed_timestamp (Datetime): The point in time when completion occurred.
+            status (Numeric):  The response status code
+            error_message (String):  Information describing any error state provided by the caller
+
+        Returns:
+            None
+        """
+
+
         xapi_transmission.course_completed = course_completed
         xapi_transmission.completed_timestamp = completed_timestamp
         xapi_transmission.grade = course_grade

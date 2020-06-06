@@ -62,7 +62,14 @@ class TestUtils(unittest.TestCase):
         mock_integration_config = mock.Mock(enabled=True)
         mock_get_user_social_auth.return_value = self.mock_social_auth
         mock_catalog_integration.current.return_value = mock_integration_config
-        send_course_enrollment_statement(self.x_api_lrs_config, self.course_enrollment)
+
+        send_course_enrollment_statement(
+            self.x_api_lrs_config,
+            self.user,
+            self.course_overview,
+            'course',
+            {'status':500, 'error_messages': None},
+        )
 
         self.x_api_client.lrs.save_statement.assert_called()  # pylint: disable=no-member
 
@@ -78,11 +85,14 @@ class TestUtils(unittest.TestCase):
         mock_integration_config = mock.Mock(enabled=True)
         mock_get_user_social_auth.return_value = self.mock_social_auth
         mock_catalog_integration.current.return_value = mock_integration_config
+
         send_course_completion_statement(
             self.x_api_lrs_config,
             self.user,
             self.course_overview,
             self.course_grade,
+            'course',
+            {'status':500, 'error_message': None}
         )
 
         self.x_api_client.lrs.save_statement.assert_called()  # pylint: disable=no-member
