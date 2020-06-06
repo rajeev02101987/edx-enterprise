@@ -10,6 +10,7 @@ import logging
 
 import six
 
+from enterprise.tpa_pipeline import get_user_social_auth
 from integrated_channels.exceptions import ClientError
 from integrated_channels.xapi.client import EnterpriseXAPIClient
 from integrated_channels.xapi.statements.learner_course_completion import LearnerCourseCompletionStatement
@@ -78,8 +79,7 @@ def send_course_enrollment_statement(lrs_configuration, user, course_overview, o
     event_type = 'enrollment'
     course_id = course_overview.key if object_type == 'course' else six.text_type(course_overview.id)
     username = user.username if user else 'Unavailable'
-    user_social_auth = None
-    #user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
+    user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
 
     statement = LearnerCourseEnrollmentStatement(
         lrs_configuration.enterprise_customer.site,
@@ -117,8 +117,7 @@ def send_course_completion_statement(lrs_configuration,
     event_type = 'completion'
     course_id = course_overview.key if object_type == 'course' else six.text_type(course_overview.id)
     username = user.username if user else 'Unavailable'
-    user_social_auth = None
-    #user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
+    user_social_auth = get_user_social_auth(user, lrs_configuration.enterprise_customer)
 
     statement = LearnerCourseCompletionStatement(
         lrs_configuration.enterprise_customer.site,
