@@ -225,7 +225,7 @@ class Command(BaseCommand):
         Prefetch Users from the list of user_ids present in the persistent_course_grades.
 
         Arguments:
-            persistent_course_grades (list): A list of PersistentCourseGrade.
+            enrollment_grades (list): A list of PersistentCourseGrade.
 
         Returns:
             (dict): A dictionary containing user_id to user mapping.
