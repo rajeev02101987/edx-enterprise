@@ -120,7 +120,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[mock.MagicMock()])
+        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'send_course_completion_statement',
@@ -152,7 +152,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[mock.MagicMock()])
+        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'send_course_completion_statement',
@@ -187,7 +187,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[mock.MagicMock()])
+        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
@@ -222,7 +222,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[mock.MagicMock()])
+        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
