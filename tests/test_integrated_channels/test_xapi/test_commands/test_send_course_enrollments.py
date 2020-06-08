@@ -65,11 +65,12 @@ class TestSendCourseEnrollments(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_get_course_enrollments(self):
+    def test_get_course_enrollments(self, mock_catalog_integration):
         """
         Make sure NotConnectedToOpenEdX is raised when enterprise app is not installed in Open edX environment.
         """
         xapi_config = factories.XAPILRSConfigurationFactory()
+        mock_integration_config = mock.Mock(enabled=True)
         mock_catalog_integration.current.return_value = mock_integration_config
 
         with raises(
@@ -176,6 +177,7 @@ class TestSendCourseEnrollments(unittest.TestCase):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
+        mock_integration_config = mock.Mock(enabled=True)
         factories.XAPILRSConfigurationFactory.create_batch(5)
         mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_enrollments')
