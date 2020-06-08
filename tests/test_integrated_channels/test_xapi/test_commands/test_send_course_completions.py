@@ -104,7 +104,7 @@ class TestSendCourseCompletions(unittest.TestCase):
 
         user = factories.UserFactory()
         expected = [user]
-        assert Command.prefetch_users({1:mock.Mock(user_id=user.id)}) == expected
+        assert Command.prefetch_users({'1': mock.Mock(user_id=user.id)}) == expected
 
     @mock.patch(
         MODULE_PATH + 'PersistentCourseGrade',
@@ -120,7 +120,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
+        mock.MagicMock(return_value=[{'1': mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'send_course_completion_statement',
@@ -152,7 +152,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
+        mock.MagicMock(return_value=[{'1': mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'send_course_completion_statement',
@@ -187,7 +187,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
+        mock.MagicMock(return_value=[{'1': mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
@@ -222,7 +222,7 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value=[{1: mock.MagicMock()}])
+        mock.MagicMock(return_value=[{'1': mock.MagicMock()}])
     )
     @mock.patch(
         MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
