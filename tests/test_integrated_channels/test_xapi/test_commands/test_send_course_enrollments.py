@@ -172,7 +172,6 @@ class TestSendCourseEnrollments(unittest.TestCase):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
-        mock_catalog_integration.current.return_value = mock_integration_config
         factories.XAPILRSConfigurationFactory.create_batch(5)
         call_command('send_course_enrollments')
 
