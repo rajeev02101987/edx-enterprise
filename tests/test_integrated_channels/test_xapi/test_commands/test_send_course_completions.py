@@ -33,13 +33,12 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'CourseGradeFactory',
-        mock.MagicMock()
+        {1: mock.MagicMock()}
     )
     @mock.patch(
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_parse_arguments(self):
         """
         Make sure command runs only when correct arguments are passed.
@@ -59,13 +58,12 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     @mock.patch(
         MODULE_PATH + 'CourseGradeFactory',
-        mock.MagicMock()
+        {1: mock.MagicMock()}
     )
     @mock.patch(
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_error_for_missing_lrs_configuration(self):
         """
         Make sure CommandError is raised if XAPILRSConfiguration does not exis for the given enterprise customer.
@@ -80,7 +78,7 @@ class TestSendCourseCompletions(unittest.TestCase):
 
     @mock.patch(
         MODULE_PATH + 'CourseGradeFactory',
-        mock.MagicMock()
+        {1: mock.MagicMock()}
     )
     @mock.patch(
         MODULE_PATH + 'send_course_completion_statement',
@@ -90,7 +88,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_get_course_completions(self):
         """
         Make sure NotConnectedToOpenEdX is raised when enterprise app is not installed in Open edX environment.
@@ -113,7 +110,6 @@ class TestSendCourseCompletions(unittest.TestCase):
             call_command('send_course_completions')
             assert mock_completions.objects.filter.called
 
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_prefetch_users(self):
         """
         Make sure prefetch_users method works as expected.
