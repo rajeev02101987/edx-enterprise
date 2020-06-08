@@ -72,11 +72,15 @@ class TestSendCourseCompletions(unittest.TestCase):
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
-    def test_get_course_completions(self):
+    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    def test_get_course_completions(self, mock_catalog_integration):
         """
         Make sure NotConnectedToOpenEdX is raised when enterprise app is not installed in Open edX environment.
         """
+        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
+        mock_catalog_integration.current.return_value = mock_integration_config
+
         with raises(
                 NotConnectedToOpenEdX,
                 match='This package must be installed in an OpenEdX environment.'
@@ -130,7 +134,8 @@ class TestSendCourseCompletions(unittest.TestCase):
         MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
         mock.MagicMock()
     )
-    def test_command_client_error(self):
+    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    def test_command_client_error(self, mock_catalog_integration):
         """
         Make command handles networking issues gracefully.
         """
@@ -138,7 +143,10 @@ class TestSendCourseCompletions(unittest.TestCase):
         handler = MockLoggingHandler(level="DEBUG")
         logger.addHandler(handler)
 
+        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
+        mock_catalog_integration.current.return_value = mock_integration_config
+
         call_command('send_course_completions', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
         expected_message = (
             'Client error while sending course completion to xAPI for enterprise '
@@ -195,11 +203,14 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     # pylint: disable=invalid-name
     @mock.patch(MODULE_PATH + 'send_course_completion_statement')
-    def test_command(self, mock_send_completion_statement):
+    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    def test_command(self, mock_send_completion_statement, mock_catalog_integration):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
+        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
+        mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_completions', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
 
         assert mock_send_completion_statement.called
@@ -225,11 +236,14 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(MODULE_PATH + 'send_course_completion_statement')
-    def test_command_once_for_all_customers(self, mock_send_completion_statement):
+    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    def test_command_once_for_all_customers(self, mock_send_completion_statement, mock_catalog_integration):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
+        mock_integration_config = mock.Mock(enabled=True)
         factories.XAPILRSConfigurationFactory.create_batch(5)
+        mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_completions')
 
         assert mock_send_completion_statement.call_count == 5

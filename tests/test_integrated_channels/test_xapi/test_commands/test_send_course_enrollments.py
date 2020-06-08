@@ -108,11 +108,14 @@ class TestSendCourseEnrollments(unittest.TestCase):
         mock.MagicMock(return_value=(mock.MagicMock(), True))
     )
     @mock.patch(MODULE_PATH + 'send_course_enrollment_statement')
-    def test_command(self, mock_send_course_enrollment_statement):
+    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    def test_command(self, mock_send_course_enrollment_statement, mock_catalog_integration):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
+        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
+        mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_enrollments', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
 
         assert mock_send_course_enrollment_statement.called
@@ -137,7 +140,8 @@ class TestSendCourseEnrollments(unittest.TestCase):
         MODULE_PATH + 'send_course_enrollment_statement',
         mock.Mock(side_effect=ClientError('EnterpriseXAPIClient request failed.'))
     )
-    def test_command_client_error(self):
+    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    def test_command_client_error(self, mock_catalog_integration):
         """
         Make command handles networking issues gracefully.
         """
@@ -145,7 +149,9 @@ class TestSendCourseEnrollments(unittest.TestCase):
         handler = MockLoggingHandler(level="DEBUG")
         logger.addHandler(handler)
 
+        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
+        mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_enrollments', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
         expected_message = (
             'Client error while sending course enrollment to xAPI for enterprise '
