@@ -28,11 +28,6 @@ try:
 except ImportError:
     CourseOverview = None
 
-try:
-    from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory  # pylint:disable=ungrouped-imports
-except ImportError:
-    CourseGradeFactory = None
-
 
 LOGGER = getLogger(__name__)
 
@@ -98,7 +93,7 @@ class Command(BaseCommand):
         """
         Send xAPI statements.
         """
-        if not all((PersistentCourseGrade, CourseOverview, CourseGradeFactory)):
+        if not all((PersistentCourseGrade, CourseOverview)):
             raise NotConnectedToOpenEdX("This package must be installed in an OpenEdX environment.")
 
         days, enterprise_customer = self.parse_arguments(*args, **options)

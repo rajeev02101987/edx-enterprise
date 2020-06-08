@@ -32,10 +32,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(
-        MODULE_PATH + 'CourseGradeFactory',
-        {1: mock.MagicMock()}
-    )
-    @mock.patch(
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
@@ -57,10 +53,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(
-        MODULE_PATH + 'CourseGradeFactory',
-        {1: mock.MagicMock()}
-    )
-    @mock.patch(
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
@@ -76,14 +68,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         ):
             call_command('send_course_completions', days=1, enterprise_customer_uuid=enterprise_customer.uuid)
 
-    @mock.patch(
-        MODULE_PATH + 'CourseGradeFactory',
-        {1: mock.MagicMock()}
-    )
-    @mock.patch(
-        MODULE_PATH + 'send_course_completion_statement',
-        mock.MagicMock()
-    )
     @mock.patch(
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
@@ -103,7 +87,8 @@ class TestSendCourseCompletions(unittest.TestCase):
                 enterprise_customer_uuid=xapi_config.enterprise_customer.uuid,
             )
 
-        # Verify that get_course_completions returns PersistentCourseGrade records
+        # Verify that get_course_completions is called by checking to see if PersistentCourseGrade is referenced
+        # in the context of the send_course_completions command
         with mock.patch(
                 MODULE_PATH + 'PersistentCourseGrade'
         ) as mock_completions:
@@ -121,10 +106,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         expected = [user]
         assert Command.prefetch_users({1:mock.Mock(user_id=user.id)}) == expected
 
-    @mock.patch(
-        MODULE_PATH + 'CourseGradeFactory',
-        mock.MagicMock()
-    )
     @mock.patch(
         MODULE_PATH + 'PersistentCourseGrade',
         mock.MagicMock()
@@ -197,10 +178,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(
-        MODULE_PATH + 'CourseGradeFactory',
-        mock.MagicMock()
-    )
-    @mock.patch(
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
@@ -216,6 +193,10 @@ class TestSendCourseCompletions(unittest.TestCase):
         MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
         mock.MagicMock()
     )
+    @mock.patch(
+        'enrollment_grades',
+        mock.MagicMock()
+    )
     # pylint: disable=invalid-name
     @mock.patch(MODULE_PATH + 'send_course_completion_statement')
     def test_command(self, mock_send_completion_statement):
@@ -229,10 +210,6 @@ class TestSendCourseCompletions(unittest.TestCase):
 
     @mock.patch(
         MODULE_PATH + 'PersistentCourseGrade',
-        mock.MagicMock()
-    )
-    @mock.patch(
-        MODULE_PATH + 'CourseGradeFactory',
         mock.MagicMock()
     )
     @mock.patch(
