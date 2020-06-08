@@ -36,7 +36,7 @@ class TestLearnerCourseCompletionStatement(unittest.TestCase):
             display_name=faker.text(max_nb_chars=25),
             short_description=faker.text()
         )
-        self.course_grade = Mock(percent=0.80, passed=True)
+        self.course_grade = Mock(percent_grade=0.80, passed_timestamp='2020-04-01')
 
         self.expected = {
             'verb': {
