@@ -64,7 +64,7 @@ class TestSendCourseEnrollments(unittest.TestCase):
         MODULE_PATH + 'send_course_enrollment_statement',
         mock.MagicMock()
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    @mock.patch(MODULE_PATH + 'enterprise.api_client.discovery.CatalogIntegration')
     def test_get_course_enrollments(self, mock_catalog_integration):
         """
         Make sure NotConnectedToOpenEdX is raised when enterprise app is not installed in Open edX environment.
@@ -108,7 +108,7 @@ class TestSendCourseEnrollments(unittest.TestCase):
         mock.MagicMock(return_value=(mock.MagicMock(), True))
     )
     @mock.patch(MODULE_PATH + 'send_course_enrollment_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    @mock.patch(MODULE_PATH + 'CatalogIntegration')
     def test_command(self, mock_send_course_enrollment_statement, mock_catalog_integration):
         """
         Make command runs successfully and sends correct data to the LRS.
@@ -140,7 +140,7 @@ class TestSendCourseEnrollments(unittest.TestCase):
         MODULE_PATH + 'send_course_enrollment_statement',
         mock.Mock(side_effect=ClientError('EnterpriseXAPIClient request failed.'))
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    @mock.patch(MODULE_PATH + 'CatalogIntegration')
     def test_command_client_error(self, mock_catalog_integration):
         """
         Make command handles networking issues gracefully.
@@ -178,7 +178,7 @@ class TestSendCourseEnrollments(unittest.TestCase):
         mock.MagicMock(return_value=[mock.MagicMock()])
     )
     @mock.patch(MODULE_PATH + 'send_course_enrollment_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    @mock.patch(MODULE_PATH + 'CatalogIntegration')
     def test_command_once_for_all_customers(self, mock_send_course_enrollment_statement, mock_catalog_integration):
         """
         Make command runs successfully and sends correct data to the LRS.
