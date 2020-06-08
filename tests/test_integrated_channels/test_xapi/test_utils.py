@@ -46,7 +46,7 @@ class TestUtils(unittest.TestCase):
         self.course_overview = mock.Mock(**self.course_overview_mock_data)
 
         self.course_enrollment = mock.Mock(user=self.user, course=self.course_overview)
-        self.course_grade = 0.80
+        self.course_grade = mock.Mock(percent_grade=0.80, passed_timestamp='2020-04-01')
 
         self.x_api_lrs_config = factories.XAPILRSConfigurationFactory()
         self.x_api_client = EnterpriseXAPIClient(self.x_api_lrs_config)

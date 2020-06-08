@@ -122,7 +122,7 @@ class TestSendCourseCompletions(unittest.TestCase):
         from integrated_channels.xapi.management.commands.send_course_completions import Command
 
         user = factories.UserFactory()
-        expected = [{user.id: user}]
+        expected = [user]
         assert Command.prefetch_users({1:mock.Mock(user_id=user.id)}) == expected
 
     @mock.patch(
