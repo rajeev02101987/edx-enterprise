@@ -34,7 +34,8 @@ class TestLearnerCourseCompletionStatement(unittest.TestCase):
         self.course_overview = Mock(
             id='course-v1:edX+DemoX+Demo_Course',
             display_name=faker.text(max_nb_chars=25),
-            short_description=faker.text()
+            short_description=faker.text(),
+            key='edX+DemoX',
         )
         self.course_grade = Mock(percent_grade=0.80, passed_timestamp='2020-04-01')
 
@@ -59,7 +60,7 @@ class TestLearnerCourseCompletionStatement(unittest.TestCase):
                         'en-US': self.course_overview.display_name
                     }
                 },
-                'id': self.course_overview.id,
+                'id': self.course_overview.key,
                 'objectType': 'Activity'
             },
             'result': {

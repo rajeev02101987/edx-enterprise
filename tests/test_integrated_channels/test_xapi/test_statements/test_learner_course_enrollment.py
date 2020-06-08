@@ -35,7 +35,8 @@ class TestLearnerCourseEnrollmentStatement(unittest.TestCase):
         self.course_overview = Mock(
             id='course-v1:edX+DemoX+Demo_Course',
             display_name=faker.text(max_nb_chars=25),
-            short_description=faker.text()
+            short_description=faker.text(),
+            key='edX+DemoX',
         )
         self.expected = {
             'verb':
@@ -64,7 +65,7 @@ class TestLearnerCourseEnrollmentStatement(unittest.TestCase):
                                     'en-US': self.course_overview.display_name
                                 }
                         },
-                    'id': self.course_overview.id,
+                    'id': self.course_overview.key,
                     'objectType': 'Activity'
                 },
         }
