@@ -171,7 +171,6 @@ class Command(BaseCommand):
                         response_fields.get('error_message')
                     )
 
-
     def get_course_enrollments(self, enterprise_customer, days):
         """
         Get course enrollments for all the learners of given enterprise customer.

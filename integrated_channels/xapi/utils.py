@@ -51,8 +51,8 @@ def _send_statement(statement, object_type, event_type, lrs_configuration,
         LOGGER.exception(lrs_response.error_message)
 
     LOGGER.info(
-        '{status_string} {object_type} {event_type} event to {lrs_hostname} for ' \
-        'Enterprise Customer: {enterprise_customer}, User: {username} ' \
+        '{status_string} {object_type} {event_type} event to {lrs_hostname} for '
+        'Enterprise Customer: {enterprise_customer}, User: {username} '
         'and {object_type}: {course_id}'.format(
             status_string=status_string,
             object_type=object_type,

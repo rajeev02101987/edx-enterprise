@@ -69,7 +69,7 @@ class TestUtils(unittest.TestCase):
             self.user,
             self.course_overview,
             'course',
-            {'status':500, 'error_messages': None},
+            {'status': 500, 'error_messages': None},
         )
 
         self.x_api_client.lrs.save_statement.assert_called()  # pylint: disable=no-member
@@ -93,7 +93,7 @@ class TestUtils(unittest.TestCase):
             self.course_overview,
             self.course_grade,
             'course',
-            {'status':500, 'error_message': None}
+            {'status': 500, 'error_message': None}
         )
 
         self.x_api_client.lrs.save_statement.assert_called()  # pylint: disable=no-member

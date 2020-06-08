@@ -264,8 +264,6 @@ class Command(BaseCommand):
         Returns:
             None
         """
-
-
         xapi_transmission.course_completed = course_completed
         xapi_transmission.completed_timestamp = completed_timestamp
         xapi_transmission.grade = course_grade
