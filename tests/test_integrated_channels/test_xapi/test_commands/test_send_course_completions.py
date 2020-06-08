@@ -153,7 +153,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
         mock.MagicMock()
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_command_client_error(self):
         """
         Make command handles networking issues gracefully.
@@ -182,7 +181,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         MODULE_PATH + 'send_course_completion_statement',
         mock.Mock(side_effect=ClientError('EnterpriseXAPIClient request failed.'))
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_command_grade_factory(self):
         """
         Make sure NotConnectedToOpenEdX is raised when enterprise app is not installed in Open edX environment.
@@ -224,7 +222,6 @@ class TestSendCourseCompletions(unittest.TestCase):
     )
     # pylint: disable=invalid-name
     @mock.patch(MODULE_PATH + 'send_course_completion_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_command(self, mock_send_completion_statement):
         """
         Make command runs successfully and sends correct data to the LRS.
@@ -259,7 +256,6 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(MODULE_PATH + 'send_course_completion_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
     def test_command_once_for_all_customers(self, mock_send_completion_statement):
         """
         Make command runs successfully and sends correct data to the LRS.
