@@ -194,7 +194,7 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(
-        'enrollment_grades',
+        MODULE_PATH + 'enrollment_grades',
         mock.MagicMock()
     )
     # pylint: disable=invalid-name
