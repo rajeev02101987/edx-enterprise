@@ -64,14 +64,12 @@ class TestSendCourseEnrollments(unittest.TestCase):
         MODULE_PATH + 'send_course_enrollment_statement',
         mock.MagicMock()
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_get_course_enrollments(self, mock_catalog_integration):
+    @mock.patch('enterprise.api_client.discovery.CourseCatalogApiServiceClient')
+    def test_get_course_enrollments(self, mock_catalog_client):
         """
         Make sure NotConnectedToOpenEdX is raised when enterprise app is not installed in Open edX environment.
         """
         xapi_config = factories.XAPILRSConfigurationFactory()
-        mock_integration_config = mock.Mock(enabled=True)
-        mock_catalog_integration.current.return_value = mock_integration_config
 
         with raises(
                 NotConnectedToOpenEdX,
@@ -108,57 +106,15 @@ class TestSendCourseEnrollments(unittest.TestCase):
         mock.MagicMock(return_value=(mock.MagicMock(), True))
     )
     @mock.patch(MODULE_PATH + 'send_course_enrollment_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_command(self, mock_send_course_enrollment_statement, mock_catalog_integration):
+    @mock.patch('enterprise.api_client.discovery.CourseCatalogApiServiceClient')
+    def test_command(self, mock_send_course_enrollment_statement, mock_catalog_client):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
-        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
-        mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_enrollments', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
 
         assert mock_send_course_enrollment_statement.called
-
-    @mock.patch(
-        MODULE_PATH + 'CourseEnrollment',
-        mock.MagicMock()
-    )
-    @mock.patch(
-        MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects.get_or_create',
-        mock.MagicMock(return_value=(mock.MagicMock(), True))
-    )
-    @mock.patch(
-        MODULE_PATH + 'Command.get_course_enrollments',
-        mock.MagicMock(return_value=[mock.MagicMock()])
-    )
-    @mock.patch(
-        MODULE_PATH + 'EnterpriseCourseEnrollment.get_enterprise_course_enrollment_id',
-        mock.MagicMock()
-    )
-    @mock.patch(
-        MODULE_PATH + 'send_course_enrollment_statement',
-        mock.Mock(side_effect=ClientError('EnterpriseXAPIClient request failed.'))
-    )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_command_client_error(self, mock_catalog_integration):
-        """
-        Make command handles networking issues gracefully.
-        """
-        logger = logging.getLogger('integrated_channels.xapi.management.commands.send_course_enrollments')
-        handler = MockLoggingHandler(level="DEBUG")
-        logger.addHandler(handler)
-
-        mock_integration_config = mock.Mock(enabled=True)
-        xapi_config = factories.XAPILRSConfigurationFactory()
-        mock_catalog_integration.current.return_value = mock_integration_config
-        call_command('send_course_enrollments', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
-        expected_message = (
-            'Client error while sending course enrollment to xAPI for enterprise '
-            'customer: {enterprise_customer}'.format(enterprise_customer=xapi_config.enterprise_customer.name)
-        )
-
-        assert expected_message in handler.messages['error'][0]
 
     @mock.patch(
         MODULE_PATH + 'CourseEnrollment',
@@ -178,14 +134,12 @@ class TestSendCourseEnrollments(unittest.TestCase):
         mock.MagicMock(return_value=[mock.MagicMock()])
     )
     @mock.patch(MODULE_PATH + 'send_course_enrollment_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
+    @mock.patch('enterprise.api_client.discovery.CourseCatalogApiServiceClient')
     def test_command_once_for_all_customers(self, mock_send_course_enrollment_statement, mock_catalog_integration):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
-        mock_integration_config = mock.Mock(enabled=True)
         factories.XAPILRSConfigurationFactory.create_batch(5)
-        mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_enrollments')
 
         assert mock_send_course_enrollment_statement.call_count == 5

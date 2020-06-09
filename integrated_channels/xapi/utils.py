@@ -33,22 +33,25 @@ def _send_statement(statement, object_type, event_type, lrs_configuration,
         )
     )
 
-    status_string = 'Error transmitting'
+    lrs_client = EnterpriseXAPIClient(lrs_configuration)
+
     try:
-        lrs_response = EnterpriseXAPIClient(lrs_configuration).save_statement(statement)
-        response_fields.update({'status': lrs_response.response.status})
-
-        if lrs_response.response.status == 200:
-            status_string = 'Successfully transmitted'
-        else:
-            response_fields.update({'error_message': lrs_response.data})
-
-    except ClientError:
+        lrs_response = lrs_client.save_statement(statement)
         response_fields.update({
             'status': lrs_response.response.status,
             'error_message': lrs_response.data
         })
-        LOGGER.exception(lrs_response.error_message)
+
+    except ClientError:
+        error_message = 'EnterpriseXAPIClient request failed.'
+        response_fields.update({
+            'error_message': error_message
+        })
+        LOGGER.exception(error_message)
+
+    status_string = 'Error transmitting'
+    if response_fields['status'] == 200:
+        status_string = 'Successfully transmitted'
 
     LOGGER.info(
         '{status_string} {object_type} {event_type} event to {lrs_hostname} for '

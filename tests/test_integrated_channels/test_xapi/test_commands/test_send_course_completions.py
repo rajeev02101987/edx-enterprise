@@ -72,14 +72,12 @@ class TestSendCourseCompletions(unittest.TestCase):
         MODULE_PATH + 'CourseOverview',
         mock.MagicMock()
     )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_get_course_completions(self, mock_catalog_integration):
+    @mock.patch('enterprise.api_client.discovery.CourseCatalogApiServiceClient')
+    def test_error_for_invalid_environment(self, mock_catalog_client):
         """
         Make sure NotConnectedToOpenEdX is raised when enterprise app is not installed in Open edX environment.
         """
-        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
-        mock_catalog_integration.current.return_value = mock_integration_config
 
         with raises(
                 NotConnectedToOpenEdX,
@@ -91,13 +89,31 @@ class TestSendCourseCompletions(unittest.TestCase):
                 enterprise_customer_uuid=xapi_config.enterprise_customer.uuid,
             )
 
-        # Verify that get_course_completions is called by checking to see if PersistentCourseGrade is referenced
-        # in the context of the send_course_completions command
-        with mock.patch(
-                MODULE_PATH + 'PersistentCourseGrade'
-        ) as mock_completions:
-            call_command('send_course_completions')
-            assert mock_completions.objects.filter.called
+    @mock.patch(
+        MODULE_PATH + 'EnterpriseCustomerUser',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'EnterpriseCourseEnrollment',
+        mock.MagicMock()
+    )
+    @mock.patch(MODULE_PATH + 'PersistentCourseGrade')
+    def test_get_course_completions(self, mock_persistent_course_grade):
+        """
+        Make sure get_course_completions works as expected
+        """
+        from integrated_channels.xapi.management.commands.send_course_completions import Command
+
+        user = factories.UserFactory()
+        expected = {user.id: user}
+        enterprise_course_enrollments = [
+            mock.Mock(id=42, user_id=user.id)
+        ]
+        response = Command.get_course_completions(enterprise_course_enrollments)
+        assert mock_persistent_course_grade.objects.filter.called
+
+        mock_persistent_course_grade.objects.filter.return_value = mock.MagicMock()
+        response = Command.get_course_completions(enterprise_course_enrollments)
 
     def test_prefetch_users(self):
         """
@@ -107,52 +123,9 @@ class TestSendCourseCompletions(unittest.TestCase):
         from integrated_channels.xapi.management.commands.send_course_completions import Command
 
         user = factories.UserFactory()
-        expected = [user]
-        assert Command.prefetch_users(mock.Mock(user_id=user.id)) == expected
-
-    @mock.patch(
-        MODULE_PATH + 'PersistentCourseGrade',
-        mock.MagicMock()
-    )
-    @mock.patch(
-        MODULE_PATH + 'CourseOverview',
-        mock.MagicMock()
-    )
-    @mock.patch(
-        MODULE_PATH + 'User',
-        mock.MagicMock()
-    )
-    @mock.patch(
-        MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value={1: mock.MagicMock()})
-    )
-    @mock.patch(
-        MODULE_PATH + 'send_course_completion_statement',
-        mock.Mock(side_effect=ClientError('EnterpriseXAPIClient request failed.'))
-    )
-    @mock.patch(
-        MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
-        mock.MagicMock()
-    )
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_command_client_error(self, mock_catalog_integration):
-        """
-        Make command handles networking issues gracefully.
-        """
-        logger = logging.getLogger('integrated_channels.xapi.management.commands.send_course_completions')
-        handler = MockLoggingHandler(level="DEBUG")
-        logger.addHandler(handler)
-
-        mock_integration_config = mock.Mock(enabled=True)
-        xapi_config = factories.XAPILRSConfigurationFactory()
-        mock_catalog_integration.current.return_value = mock_integration_config
-
-        call_command('send_course_completions', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
-        expected_message = (
-            'Client error while sending course completion to xAPI for enterprise '
-            'customer: {enterprise_customer}'.format(enterprise_customer=xapi_config.enterprise_customer.name)
-        )
-        assert expected_message in handler.messages['error'][0]
+        enrollment_grades = {42:mock.Mock(user_id=user.id)}
+        expected = {user.id: user}
+        assert Command.prefetch_users(enrollment_grades) == expected
 
     @mock.patch(
         MODULE_PATH + 'CourseOverview',
@@ -194,27 +167,40 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(
+        MODULE_PATH + 'Command.get_pertinent_enrollment_ids',
+        mock.MagicMock()
+    )
+    @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
         mock.MagicMock(return_value={1: mock.MagicMock()})
     )
     @mock.patch(
-        MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
-        mock.MagicMock()
+        MODULE_PATH + 'Command.is_success_response',
+        mock.MagicMock(return_value=True)
     )
-    # pylint: disable=invalid-name
+    @mock.patch(
+        MODULE_PATH + 'Command.get_xapi_transmission_queryset',
+        mock.MagicMock(return_value=[mock.Mock(
+            id=1234,
+            enterprise_course_enrollment_id=23243,
+            course_id='course-v1:edX+DemoX+Demo_Course'
+        )])
+    )
     @mock.patch(MODULE_PATH + 'send_course_completion_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_command(self, mock_send_completion_statement, mock_catalog_integration):
+    @mock.patch('enterprise.api_client.discovery.CourseCatalogApiServiceClient')
+    def test_command(self, mock_send_completion_statement, mock_catalog_client):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
-        mock_integration_config = mock.Mock(enabled=True)
         xapi_config = factories.XAPILRSConfigurationFactory()
-        mock_catalog_integration.current.return_value = mock_integration_config
         call_command('send_course_completions', enterprise_customer_uuid=xapi_config.enterprise_customer.uuid)
 
         assert mock_send_completion_statement.called
 
+    @mock.patch(
+        MODULE_PATH + 'User',
+        mock.MagicMock()
+    )
     @mock.patch(
         MODULE_PATH + 'PersistentCourseGrade',
         mock.MagicMock()
@@ -224,26 +210,166 @@ class TestSendCourseCompletions(unittest.TestCase):
         mock.MagicMock()
     )
     @mock.patch(
-        MODULE_PATH + 'User',
+        MODULE_PATH + 'Command.get_enterprise_course_enrollments',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_enterprise_enrollment_ids',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_xapi_transmission_queryset',
+        mock.MagicMock(return_value=[mock.Mock(
+            id=1234,
+            enterprise_course_enrollment_id=23243,
+            course_id='course-v1:edX+DemoX+Demo_Course'
+        )])
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_pertinent_enrollment_ids',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_pertinent_enrollments',
         mock.MagicMock()
     )
     @mock.patch(
         MODULE_PATH + 'Command.get_course_completions',
-        mock.MagicMock(return_value={1: mock.MagicMock()})
-    )
-    @mock.patch(
-        MODULE_PATH + 'XAPILearnerDataTransmissionAudit.objects',
         mock.MagicMock()
     )
+    @mock.patch(
+        MODULE_PATH + 'Command.is_success_response',
+        mock.MagicMock(return_value=True)
+    )
     @mock.patch(MODULE_PATH + 'send_course_completion_statement')
-    @mock.patch('enterprise.api_client.discovery.CatalogIntegration')
-    def test_command_once_for_all_customers(self, mock_send_completion_statement, mock_catalog_integration):
+    @mock.patch('enterprise.api_client.discovery.CourseCatalogApiServiceClient')
+    def test_command_once_for_all_customers(self, mock_send_completion_statement, mock_catalog_client):
         """
         Make command runs successfully and sends correct data to the LRS.
         """
-        mock_integration_config = mock.Mock(enabled=True)
         factories.XAPILRSConfigurationFactory.create_batch(5)
-        mock_catalog_integration.current.return_value = mock_integration_config
+        call_command('send_course_completions')
+        assert mock_send_completion_statement.call_count == 5
+
+
+    @mock.patch(
+        MODULE_PATH + 'CourseOverview',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'PersistentCourseGrade',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_enterprise_course_enrollments',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_enterprise_enrollment_ids',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_xapi_transmission_queryset',
+        mock.MagicMock(return_value=[mock.Mock(
+            id=1234,
+            enterprise_course_enrollment_id=23243,
+            course_id='course-v1:edX+DemoX+Demo_Course'
+        )])
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_pertinent_enrollment_ids',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_pertinent_enrollments',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.get_course_completions',
+        mock.MagicMock()
+    )
+    @mock.patch(
+        MODULE_PATH + 'Command.is_success_response',
+        mock.MagicMock(return_value=False)
+    )
+    @mock.patch(
+        MODULE_PATH + 'send_course_completion_statement',
+        mock.MagicMock()
+    )
+    @mock.patch('enterprise.api_client.discovery.CourseCatalogApiServiceClient')
+    def test_command_send_statement_error_response(self, mock_catalog_client):
+        xapi_config = factories.XAPILRSConfigurationFactory()
         call_command('send_course_completions')
 
-        assert mock_send_completion_statement.call_count == 5
+    def test_get_object_type(self):
+        """
+        Make sure get_object_type logic works as expected.
+        """
+        # Import is placed here because if placed at the top it affects mocking.
+        from integrated_channels.xapi.management.commands.send_course_completions import Command
+
+        xapi_transmission = mock.Mock(course_id='edX+DemoX')
+        assert Command.get_object_type(xapi_transmission) == 'course'
+
+        xapi_transmission = mock.Mock(course_id='course-v1:edX+DemoX+Demo_Course')
+        assert Command.get_object_type(xapi_transmission) == 'courserun'
+
+    @mock.patch(MODULE_PATH + 'XAPILearnerDataTransmissionAudit')
+    def test_get_xapi_transmission_queryset(self, mock_transmission_audit):
+        """
+        Make sure operation works as expected.
+        """
+        # Import is placed here because if placed at the top it affects mocking.
+        from integrated_channels.xapi.management.commands.send_course_completions import Command
+
+        enterprise_enrollment_ids = [2,24,632]
+        Command.get_xapi_transmission_queryset(enterprise_enrollment_ids)
+        assert mock_transmission_audit.objects.filter.called
+
+    def test_get_pertinent_enrollment_ids(self):
+        """
+        Make sure operation works as expected.
+        """
+        # Import is placed here because if placed at the top it affects mocking.
+        from integrated_channels.xapi.management.commands.send_course_completions import Command
+
+        mock_transmission_queryset = mock.MagicMock(return_value=[mock.Mock(
+            id=1234,
+            enterprise_course_enrollment_id=23243,
+            course_id='course-v1:edX+DemoX+Demo_Course'
+        )])
+        response = Command.get_pertinent_enrollment_ids(mock_transmission_queryset)
+
+    def test_get_is_success_response(self):
+        """
+        Make sure is_success_response logic works as expected.
+        """
+        # Import is placed here because if placed at the top it affects mocking.
+        from integrated_channels.xapi.management.commands.send_course_completions import Command
+
+        response_fields = {'status': 200, 'error_message': None}
+        assert Command.is_success_response(response_fields) == True
+
+        response_fields = {'status': 400, 'error_message': None}
+        assert Command.is_success_response(response_fields) == False
+
+        response_fields = {'status': 500, 'error_message': None}
+        assert Command.is_success_response(response_fields) == False
+
+    @mock.patch(
+        MODULE_PATH + 'Command.get_grade_record_for_enrollment',
+        mock.MagicMock(return_value=None)
+    )
+    @mock.patch(MODULE_PATH + 'PersistentCourseGrade')
+    def test_get_course_completions_no_grade_record(self, mock_persistent_course_grade):
+        """
+        Make sure get_course_completions works as expected
+        """
+        from integrated_channels.xapi.management.commands.send_course_completions import Command
+
+        user = factories.UserFactory()
+        expected = {user.id: user}
+        enterprise_course_enrollments = [
+            mock.Mock(id=42, user_id=user.id)
+        ]
+        response = Command.get_course_completions(enterprise_course_enrollments)

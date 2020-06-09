@@ -126,32 +126,19 @@ class Command(BaseCommand):
             days (Numeric):  Deprecated.  Original implementation utilized a "days" parameter to limit
                 the number of enrollments transmitted, but this proved to be more problematic than helpful.
         """
-        enterprise_course_enrollments = EnterpriseCourseEnrollment.objects.filter(
-            enterprise_customer_user_id__enterprise_customer=lrs_configuration.enterprise_customer
-        )
-        enterprise_enrollment_ids = enterprise_course_enrollments.values_list('id', flat=True)
-
-        xapi_transmission_queryset = XAPILearnerDataTransmissionAudit.objects.filter(
-            enterprise_course_enrollment_id__in=enterprise_enrollment_ids,
-            course_completed=0,
-        )
-
-        pertinent_enrollment_ids = xapi_transmission_queryset.values_list('enterprise_course_enrollment_id', flat=True)
-        pertinent_enrollments = enterprise_course_enrollments.filter(id__in=pertinent_enrollment_ids)
+        enterprise_course_enrollments = self.get_enterprise_course_enrollments(lrs_configuration.enterprise_customer)
+        enterprise_enrollment_ids = self.get_enterprise_enrollment_ids(enterprise_course_enrollments)
+        xapi_transmission_queryset = self.get_xapi_transmission_queryset(enterprise_enrollment_ids)
+        pertinent_enrollment_ids = self.get_pertinent_enrollment_ids(xapi_transmission_queryset)
+        pertinent_enrollments = self.get_pertinent_enrollments(enterprise_course_enrollments, pertinent_enrollment_ids)
         enrollment_grades = self.get_course_completions(pertinent_enrollments)
-
         users = self.prefetch_users(enrollment_grades)
         course_overviews = self.prefetch_courses(enrollment_grades)
-
-        course_catalog_client = get_course_catalog_api_service_client(
-            site=lrs_configuration.enterprise_customer.site
-        )
+        course_catalog_client = get_course_catalog_api_service_client(site=lrs_configuration.enterprise_customer.site)
 
         for xapi_transmission in xapi_transmission_queryset:
 
-            object_type = 'course'
-            if 'course-v1' in xapi_transmission.course_id:
-                object_type = 'courserun'
+            object_type = self.get_object_type(xapi_transmission)
 
             try:
                 course_grade = enrollment_grades[xapi_transmission.enterprise_course_enrollment_id]
@@ -174,8 +161,7 @@ class Command(BaseCommand):
                 response_fields
             )
 
-            if response_fields.get('status') == 200:
-
+            if self.is_success_response(response_fields):
                 self.save_xapi_learner_data_transmission_audit(
                     xapi_transmission,
                     course_grade.percent_grade,
@@ -185,7 +171,59 @@ class Command(BaseCommand):
                     response_fields.get('error_message')
                 )
 
-    def get_course_completions(self, enterprise_course_enrollments):
+    @staticmethod
+    def get_object_type(xapi_transmission):
+        object_type = 'course'
+        if 'course-v1' in xapi_transmission.course_id:
+            object_type = 'courserun'
+        return object_type
+
+    def get_enterprise_course_enrollments(self, enterprise_customer):
+        return EnterpriseCourseEnrollment.objects.filter(
+            enterprise_customer_user_id__enterprise_customer=enterprise_customer
+        )
+
+    def get_enterprise_enrollment_ids(self, enterprise_course_enrollments):
+        return enterprise_course_enrollments.values_list('id', flat=True)
+
+    @staticmethod
+    def get_xapi_transmission_queryset(enterprise_enrollment_ids):
+        return XAPILearnerDataTransmissionAudit.objects.filter(
+            enterprise_course_enrollment_id__in=enterprise_enrollment_ids,
+            course_completed=0,
+        )
+
+    @staticmethod
+    def get_pertinent_enrollment_ids(xapi_transmission_queryset):
+        return xapi_transmission_queryset.values_list('enterprise_course_enrollment_id', flat=True)
+
+    def get_pertinent_enrollments(self, enterprise_course_enrollments, pertinent_enrollment_ids):
+        return enterprise_course_enrollments.filter(id__in=pertinent_enrollment_ids)
+
+    @staticmethod
+    def is_success_response(response_fields):
+        success_response = False
+        if response_fields['status'] == 200:
+            success_response = True
+        return success_response
+
+    @staticmethod
+    def get_lms_user_id_from_enterprise_course_enrollment(enterprise_course_enrollment):
+        return EnterpriseCustomerUser.objects.get(id=enterprise_course_enrollment.enterprise_customer_user_id).user_id
+
+    @staticmethod
+    def get_grade_record_for_enrollment(enterprise_course_enrollment):
+        lms_user_id = Command.get_lms_user_id_from_enterprise_course_enrollment(enterprise_course_enrollment)
+        course_id = enterprise_course_enrollment.course_id
+        grade_records = PersistentCourseGrade.objects.filter(
+            user_id=lms_user_id,
+            course_id=course_id,
+            passed_timestamp__isnull=False
+        )
+        return grade_records.first()
+
+    @staticmethod
+    def get_course_completions(enterprise_course_enrollments):
         """
         Get course completions via PersistentCourseGrade for all the learners of given enterprise customer.
 
@@ -199,19 +237,10 @@ class Command(BaseCommand):
 
         """
         ece_grades = {}
-
         for ece in enterprise_course_enrollments:
-
-            lms_user_id = EnterpriseCustomerUser.objects.get(id=ece.enterprise_customer_user_id).user_id
-            grade_records = PersistentCourseGrade.objects.filter(
-                user_id=lms_user_id,
-                course_id=ece.course_id,
-                passed_timestamp__isnull=False
-            )
-
-            if grade_records.exists():
-                ece_grades.setdefault(ece.id, grade_records.first())
-
+            grade_record = Command.get_grade_record_for_enrollment(ece)
+            if grade_record is not None:
+                ece_grades.setdefault(ece.id, grade_record)
         return ece_grades
 
     @staticmethod
@@ -232,8 +261,7 @@ class Command(BaseCommand):
             user.id: user for user in users
         }
 
-    @staticmethod
-    def prefetch_courses(enrollment_grades):
+    def prefetch_courses(self, enrollment_grades):
         """
         Prefetch courses from the list of course_ids present in the persistent_course_grades.
 

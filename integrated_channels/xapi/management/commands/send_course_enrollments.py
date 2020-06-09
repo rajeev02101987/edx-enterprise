@@ -120,9 +120,8 @@ class Command(BaseCommand):
             days (int): Include course enrollment of this number of days.
         """
         course_enrollments = self.get_course_enrollments(lrs_configuration.enterprise_customer, days)
-        course_catalog_client = get_course_catalog_api_service_client(
-            site=lrs_configuration.enterprise_customer.site
-        )
+        course_catalog_client = get_course_catalog_api_service_client(site=lrs_configuration.enterprise_customer.site)
+
         for course_enrollment in course_enrollments:
 
             course_overview = course_enrollment.course
@@ -143,6 +142,7 @@ class Command(BaseCommand):
                 response_fields
             )
 
+            # import pdb; pdb.set_trace();
             if response_fields.get('status') == 200:
 
                 self.save_xapi_learner_data_transmission_audit(
