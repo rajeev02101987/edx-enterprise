@@ -33,7 +33,7 @@ matrix:
       env:
         - RUNJSHINT=true
     - arch: arm64
-      python: 3.5
+      python: 3.8
       env:
         - TOXENV=jasmine
       before_install:
@@ -46,7 +46,7 @@ matrix:
       addons:
         firefox: "49.0.2"
     - arch: arm64
-      python: 3.5
+      python: 3.8
       env:
         - RUNJSHINT=true
 cache:
